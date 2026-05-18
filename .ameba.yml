@@ -1,0 +1,30 @@
+# Run `ameba --only Lint/UselessAssign` for details
+Lint/UselessAssign:
+  Description: Disallows useless variable assignments
+  ExcludeTypeDeclarations: false
+  Excluded:
+  - src/ucl/lib.cr
+  Enabled: true
+  Severity: Warning
+
+# Run `ameba --only Lint/NotNil` for details
+Lint/NotNil:
+  Description: Identifies usage of `not_nil!` calls
+  Excluded:
+  - spec/*
+  Enabled: true
+  Severity: Warning
+
+# Macro code uses single-letter block params for compile-time type iteration
+Naming/BlockParameterName:
+  Excluded:
+  - src/ucl/serializable.cr
+  Enabled: true
+  Severity: Convention
+
+# Test config classes use property for bool fields intentionally
+Naming/QueryBoolMethods:
+  Excluded:
+  - spec/*
+  Enabled: true
+  Severity: Convention
