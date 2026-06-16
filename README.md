@@ -6,11 +6,9 @@ Crystal bindings to [libucl](https://github.com/vstakhov/libucl), the Universal 
 
 Install the native `libucl` library for your platform:
 
-| Platform | Command |
-|----------|---------|
-| FreeBSD  | Ships in base — no extra packages needed |
-| Linux    | Build from source (see below) — distro packages are too old |
-| macOS (Homebrew) | `brew install libucl` |
+- **FreeBSD** — ships in base; no extra packages needed
+- **Linux** — build from source (see below); distro packages are too old
+- **macOS (Homebrew)** — `brew install libucl`
 
 Linux distro packages (`libucl-dev`, `ucl-devel`) ship an older version of libucl that is missing the safe iterator API. Build from source instead:
 
