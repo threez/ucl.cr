@@ -40,7 +40,7 @@ module Ucl
 
   # Recursive type alias for deep conversion of UCL trees to native Crystal types.
   # Returned by `Ucl::Object#to_any`.
-  alias AnyValue = Nil | Bool | Int64 | Float64 | String | Array(AnyValue) | Hash(String, AnyValue)
+  alias AnyValue = (Bool | Int64 | Float64 | String | Array(AnyValue) | Hash(String, AnyValue))?
 
   # Parses a UCL string and returns the top-level object.
   #

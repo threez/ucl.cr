@@ -87,29 +87,29 @@ end
 describe Ucl do
   describe ".parse" do
     it "parses a simple key-value string" do
-      obj = Ucl.parse(%{name = "Crystal";})
+      obj = Ucl.parse(%(name = "Crystal";))
       obj["name"].to_s.should eq("Crystal")
     end
 
     it "parses multiple key-value pairs" do
-      obj = Ucl.parse(%{host = "localhost"; port = 8080;})
+      obj = Ucl.parse(%(host = "localhost"; port = 8080;))
       obj["host"].to_s.should eq("localhost")
       obj["port"].to_i.should eq(8080)
     end
 
     it "parses nested objects" do
-      obj = Ucl.parse(%{
+      obj = Ucl.parse(<<-UCL)
         server {
           host = "127.0.0.1";
           port = 443;
         }
-      })
+        UCL
       obj["server"]["host"].to_s.should eq("127.0.0.1")
       obj["server"]["port"].to_i.should eq(443)
     end
 
     it "parses arrays" do
-      obj = Ucl.parse(%{ports = [80, 443, 8080];})
+      obj = Ucl.parse(%(ports = [80, 443, 8080];))
       arr = obj["ports"]
       arr.array?.should be_true
       arr.size.should eq(3)
@@ -119,18 +119,18 @@ describe Ucl do
     end
 
     it "parses boolean values" do
-      obj = Ucl.parse(%{enabled = true; disabled = false;})
+      obj = Ucl.parse(%(enabled = true; disabled = false;))
       obj["enabled"].to_b.should be_true
       obj["disabled"].to_b.should be_false
     end
 
     it "parses float values" do
-      obj = Ucl.parse(%{pi = 3.14;})
+      obj = Ucl.parse(%(pi = 3.14;))
       obj["pi"].to_f.should be_close(3.14, 0.001)
     end
 
     it "parses null values" do
-      obj = Ucl.parse(%{nothing = null;})
+      obj = Ucl.parse(%(nothing = null;))
       obj["nothing"].null?.should be_true
     end
   end
@@ -138,12 +138,12 @@ describe Ucl do
   describe ".parse_file" do
     it "parses a UCL file" do
       path = File.tempname("ucl_test", ".conf")
-      File.write(path, %{
+      File.write(path, <<-UCL)
         app {
           name = "test";
           version = 1;
         }
-      })
+        UCL
       begin
         obj = Ucl.parse_file(path)
         obj["app"]["name"].to_s.should eq("test")
@@ -157,7 +157,7 @@ describe Ucl do
   describe Ucl::Object do
     describe "#type" do
       it "reports correct types" do
-        obj = Ucl.parse(%{
+        obj = Ucl.parse(<<-UCL)
           str = "hello";
           num = 42;
           flt = 1.5;
@@ -165,7 +165,7 @@ describe Ucl do
           arr = [1, 2];
           sub { key = "val"; }
           nothing = null;
-        })
+          UCL
         obj["str"].string?.should be_true
         obj["num"].int?.should be_true
         obj["flt"].float?.should be_true
@@ -178,34 +178,34 @@ describe Ucl do
 
     describe "#type_name" do
       it "returns string representation of type" do
-        obj = Ucl.parse(%{val = 42;})
+        obj = Ucl.parse(%(val = 42;))
         obj["val"].type_name.should eq("integer")
       end
     end
 
     describe "safe value extraction" do
       it "returns value on matching type" do
-        obj = Ucl.parse(%{num = 42;})
+        obj = Ucl.parse(%(num = 42;))
         obj["num"].to_i?.should eq(42)
       end
 
       it "returns nil on type mismatch" do
-        obj = Ucl.parse(%{str = "hello";})
+        obj = Ucl.parse(%(str = "hello";))
         obj["str"].to_i?.should be_nil
       end
 
       it "safely extracts strings" do
-        obj = Ucl.parse(%{name = "world";})
+        obj = Ucl.parse(%(name = "world";))
         obj["name"].to_s?.should eq("world")
       end
 
       it "safely extracts booleans" do
-        obj = Ucl.parse(%{flag = true;})
+        obj = Ucl.parse(%(flag = true;))
         obj["flag"].to_b?.should be_true
       end
 
       it "safely extracts floats" do
-        obj = Ucl.parse(%{val = 2.5;})
+        obj = Ucl.parse(%(val = 2.5;))
         val = obj["val"].to_f?
         val.should_not be_nil
         val.not_nil!.should be_close(2.5, 0.001)
@@ -214,45 +214,45 @@ describe Ucl do
 
     describe "#[]?" do
       it "returns nil for missing keys" do
-        obj = Ucl.parse(%{a = 1;})
+        obj = Ucl.parse(%(a = 1;))
         obj["b"]?.should be_nil
       end
 
       it "returns nil for out-of-bounds index" do
-        obj = Ucl.parse(%{arr = [1];})
+        obj = Ucl.parse(%(arr = [1];))
         obj["arr"][5]?.should be_nil
       end
     end
 
     describe "#[]" do
       it "raises on missing key" do
-        obj = Ucl.parse(%{a = 1;})
+        obj = Ucl.parse(%(a = 1;))
         expect_raises(Ucl::Error, "Key not found") { obj["missing"] }
       end
 
       it "raises on out-of-bounds index" do
-        obj = Ucl.parse(%{arr = [1];})
+        obj = Ucl.parse(%(arr = [1];))
         expect_raises(Ucl::Error, "Index out of bounds") { obj["arr"][99] }
       end
     end
 
     describe "#at / #at?" do
       it "looks up by dot-notation path" do
-        obj = Ucl.parse(%{
+        obj = Ucl.parse(<<-UCL)
           a { b { c = 42; } }
-        })
+          UCL
         obj.at("a.b.c").to_i.should eq(42)
       end
 
       it "returns nil for missing path" do
-        obj = Ucl.parse(%{a = 1;})
+        obj = Ucl.parse(%(a = 1;))
         obj.at?("x.y.z").should be_nil
       end
     end
 
     describe "#key" do
       it "returns the key of an iterated object" do
-        obj = Ucl.parse(%{alpha = 1; beta = 2;})
+        obj = Ucl.parse(%(alpha = 1; beta = 2;))
         keys = obj.map(&.key.not_nil!)
         keys.should contain("alpha")
         keys.should contain("beta")
@@ -261,14 +261,14 @@ describe Ucl do
 
     describe "#each" do
       it "iterates over object keys" do
-        obj = Ucl.parse(%{x = 1; y = 2; z = 3;})
+        obj = Ucl.parse(%(x = 1; y = 2; z = 3;))
         count = 0
         obj.each { count += 1 }
         count.should eq(3)
       end
 
       it "iterates over array elements" do
-        obj = Ucl.parse(%{arr = [10, 20, 30];})
+        obj = Ucl.parse(%(arr = [10, 20, 30];))
         values = obj["arr"].map(&.to_i)
         values.should eq([10_i64, 20_i64, 30_i64])
       end
@@ -276,19 +276,19 @@ describe Ucl do
 
     describe "#size" do
       it "returns array size" do
-        obj = Ucl.parse(%{arr = [1, 2, 3, 4];})
+        obj = Ucl.parse(%(arr = [1, 2, 3, 4];))
         obj["arr"].size.should eq(4)
       end
 
       it "returns object size" do
-        obj = Ucl.parse(%{a = 1; b = 2;})
+        obj = Ucl.parse(%(a = 1; b = 2;))
         obj.size.should eq(2)
       end
     end
 
     describe "#first / #last" do
       it "returns first and last array elements" do
-        obj = Ucl.parse(%{arr = [10, 20, 30];})
+        obj = Ucl.parse(%(arr = [10, 20, 30];))
         obj["arr"].first.to_i.should eq(10)
         obj["arr"].last.to_i.should eq(30)
       end
@@ -296,7 +296,7 @@ describe Ucl do
 
     describe "emission" do
       it "emits JSON" do
-        obj = Ucl.parse(%{name = "test"; value = 42;})
+        obj = Ucl.parse(%(name = "test"; value = 42;))
         json = obj.to_json
         json.should contain("\"name\"")
         json.should contain("\"test\"")
@@ -304,20 +304,20 @@ describe Ucl do
       end
 
       it "emits compact JSON" do
-        obj = Ucl.parse(%{a = 1;})
+        obj = Ucl.parse(%(a = 1;))
         compact = obj.to_compact_json
         compact.should contain("\"a\":1")
       end
 
       it "emits config format" do
-        obj = Ucl.parse(%{key = "value";})
+        obj = Ucl.parse(%(key = "value";))
         config = obj.to_config
         config.should contain("key")
         config.should contain("value")
       end
 
       it "emits YAML format" do
-        obj = Ucl.parse(%{key = "value";})
+        obj = Ucl.parse(%(key = "value";))
         yaml = obj.to_yaml_string
         yaml.should contain("key")
         yaml.should contain("value")
@@ -326,27 +326,27 @@ describe Ucl do
 
     describe "#to_any" do
       it "converts simple values" do
-        obj = Ucl.parse(%{num = 42;})
+        obj = Ucl.parse(%(num = 42;))
         any = obj.to_any.as(Hash(String, Ucl::AnyValue))
         any["num"].should eq(42_i64)
       end
 
       it "converts nested structures" do
-        obj = Ucl.parse(%{
+        obj = Ucl.parse(<<-UCL)
           config {
             items = [1, 2, 3];
             enabled = true;
           }
-        })
+          UCL
         any = obj.to_any.as(Hash(String, Ucl::AnyValue))
         config = any["config"].as(Hash(String, Ucl::AnyValue))
         items = config["items"].as(Array(Ucl::AnyValue))
         items.should eq([1_i64, 2_i64, 3_i64] of Ucl::AnyValue)
-        config["enabled"].should eq(true)
+        config["enabled"].should be_true
       end
 
       it "converts null values" do
-        obj = Ucl.parse(%{n = null;})
+        obj = Ucl.parse(%(n = null;))
         any = obj.to_any.as(Hash(String, Ucl::AnyValue))
         any["n"].should be_nil
       end
@@ -411,7 +411,7 @@ describe Ucl do
 
     describe "#delete" do
       it "removes a key from an object" do
-        obj = Ucl.parse(%{a = 1; b = 2;})
+        obj = Ucl.parse(%(a = 1; b = 2;))
         obj.delete("a").should be_true
         obj["a"]?.should be_nil
         obj["b"].to_i.should eq(2)
@@ -442,7 +442,7 @@ describe Ucl do
 
     describe "#deep_copy" do
       it "creates an independent copy" do
-        original = Ucl.parse(%{a = 1; b = 2;})
+        original = Ucl.parse(%(a = 1; b = 2;))
         copy = original.deep_copy
         copy["a"].to_i.should eq(1)
         copy["b"].to_i.should eq(2)
@@ -458,24 +458,22 @@ describe Ucl do
     end
 
     it "provides line and column in parse errors" do
-      begin
-        Ucl.parse("valid = 1;\n= = = invalid\n")
-      rescue e : Ucl::ParseError
-        e.line.should be > 0
-      end
+      Ucl.parse("valid = 1;\n= = = invalid\n")
+    rescue e : Ucl::ParseError
+      e.line.should be > 0
     end
 
     it "supports variable substitution" do
       parser = Ucl::Parser.new
       parser.register_variable("MYVAR", "hello")
-      parser.add_string(%{greeting = "$MYVAR";})
+      parser.add_string(%(greeting = "$MYVAR";))
       obj = parser.parse!
       obj["greeting"].to_s.should eq("hello")
     end
 
     it "supports method chaining" do
       obj = Ucl::Parser.new
-        .add_string(%{a = 1;})
+        .add_string(%(a = 1;))
         .parse!
       obj["a"].to_i.should eq(1)
     end
@@ -484,21 +482,21 @@ describe Ucl do
   describe Ucl::Serializable do
     describe "basic deserialization" do
       it "deserializes a simple config" do
-        config = ServerConfig.from_ucl(%{
+        config = ServerConfig.from_ucl(<<-UCL)
           host = "localhost";
           port = 8080;
-        })
+          UCL
         config.host.should eq("localhost")
         config.port.should eq(8080)
         config.tls.should be_false
       end
 
       it "deserializes with overridden defaults" do
-        config = ServerConfig.from_ucl(%{
+        config = ServerConfig.from_ucl(<<-UCL)
           host = "0.0.0.0";
           port = 443;
           tls = true;
-        })
+          UCL
         config.host.should eq("0.0.0.0")
         config.port.should eq(443)
         config.tls.should be_true
@@ -507,10 +505,10 @@ describe Ucl do
 
     describe "key remapping" do
       it "uses custom key names" do
-        config = DatabaseConfig.from_ucl(%{
+        config = DatabaseConfig.from_ucl(<<-UCL)
           connection_string = "postgres://localhost/mydb";
           pool_size = 10;
-        })
+          UCL
         config.dsn.should eq("postgres://localhost/mydb")
         config.pool_size.should eq(10)
       end
@@ -518,7 +516,7 @@ describe Ucl do
 
     describe "nested objects" do
       it "deserializes nested structures" do
-        config = AppConfig.from_ucl(%{
+        config = AppConfig.from_ucl(<<-UCL)
           name = "myapp";
           server {
             host = "0.0.0.0";
@@ -528,7 +526,7 @@ describe Ucl do
           database {
             connection_string = "postgres://localhost/db";
           }
-        })
+          UCL
         config.name.should eq("myapp")
         config.server.host.should eq("0.0.0.0")
         config.server.port.should eq(443)
@@ -540,7 +538,7 @@ describe Ucl do
 
     describe "arrays" do
       it "deserializes arrays of primitives" do
-        config = AppConfig.from_ucl(%{
+        config = AppConfig.from_ucl(<<-UCL)
           name = "myapp";
           server {
             host = "localhost";
@@ -550,17 +548,17 @@ describe Ucl do
             connection_string = "sqlite://test.db";
           }
           tags = ["web", "api", "backend"];
-        })
+          UCL
         config.tags.should eq(["web", "api", "backend"])
       end
 
       it "deserializes arrays of objects" do
-        config = ArrayOfObjects.from_ucl(%{
+        config = ArrayOfObjects.from_ucl(<<-UCL)
           servers = [
             { host = "web1"; port = 80; },
             { host = "web2"; port = 8080; tls = true; }
           ];
-        })
+          UCL
         config.servers.size.should eq(2)
         config.servers[0].host.should eq("web1")
         config.servers[0].port.should eq(80)
@@ -571,7 +569,7 @@ describe Ucl do
 
     describe "hash fields" do
       it "deserializes hash fields" do
-        config = AppConfig.from_ucl(%{
+        config = AppConfig.from_ucl(<<-UCL)
           name = "myapp";
           server {
             host = "localhost";
@@ -584,7 +582,7 @@ describe Ucl do
             env = "production";
             region = "us-east";
           }
-        })
+          UCL
         config.metadata["env"].should eq("production")
         config.metadata["region"].should eq("us-east")
       end
@@ -592,9 +590,9 @@ describe Ucl do
 
     describe "optional fields" do
       it "handles nilable fields" do
-        config = OptionalConfig.from_ucl(%{
+        config = OptionalConfig.from_ucl(<<-UCL)
           required_field = "present";
-        })
+          UCL
         config.required_field.should eq("present")
         config.optional_string.should be_nil
         config.optional_int.should be_nil
@@ -602,12 +600,12 @@ describe Ucl do
       end
 
       it "fills nilable fields when present" do
-        config = OptionalConfig.from_ucl(%{
+        config = OptionalConfig.from_ucl(<<-UCL)
           required_field = "present";
           optional_string = "here";
           optional_int = 42;
           with_default = "custom";
-        })
+          UCL
         config.optional_string.should eq("here")
         config.optional_int.should eq(42)
         config.with_default.should eq("custom")
@@ -617,21 +615,21 @@ describe Ucl do
     describe "missing required fields" do
       it "raises on missing required field" do
         expect_raises(Ucl::Error, "Missing UCL attribute") do
-          ServerConfig.from_ucl(%{host = "localhost";})
+          ServerConfig.from_ucl(%(host = "localhost";))
         end
       end
     end
 
     describe "numeric types" do
       it "deserializes various numeric types" do
-        config = NumericConfig.from_ucl(%{
+        config = NumericConfig.from_ucl(<<-UCL)
           small = 1;
           medium = 1000;
           large = 100000;
           huge = 9999999999;
           float32 = 1.5;
           float64 = 3.14159265358979;
-        })
+          UCL
         config.small.should eq(1_i8)
         config.medium.should eq(1000_i16)
         config.large.should eq(100000_i32)
@@ -644,20 +642,20 @@ describe Ucl do
     describe "strict mode" do
       it "raises on unknown keys" do
         expect_raises(Ucl::Error, "Unknown UCL attribute") do
-          StrictConfig.from_ucl(%{name = "test"; unknown = 1;})
+          StrictConfig.from_ucl(%(name = "test"; unknown = 1;))
         end
       end
     end
 
     describe "presence tracking" do
       it "tracks field presence" do
-        config = PresenceConfig.from_ucl(%{value = "here";})
+        config = PresenceConfig.from_ucl(%(value = "here";))
         config.value.should eq("here")
         config.@value_present.should be_true
       end
 
       it "tracks absent fields" do
-        config = PresenceConfig.from_ucl(%{other = 1;})
+        config = PresenceConfig.from_ucl(%(other = 1;))
         config.value.should be_nil
         config.@value_present.should be_false
       end
@@ -665,7 +663,7 @@ describe Ucl do
 
     describe "ignored fields" do
       it "skips ignored fields" do
-        config = IgnoreConfig.from_ucl(%{visible = "yes"; ignored = "no";})
+        config = IgnoreConfig.from_ucl(%(visible = "yes"; ignored = "no";))
         config.visible.should eq("yes")
         config.ignored.should eq("default")
       end
@@ -673,23 +671,23 @@ describe Ucl do
 
     describe "union types" do
       it "deserializes int from union" do
-        config = UnionConfig.from_ucl(%{value = 42;})
+        config = UnionConfig.from_ucl(%(value = 42;))
         config.value.should eq(42)
       end
 
       it "deserializes string from union" do
-        config = UnionConfig.from_ucl(%{value = "hello";})
+        config = UnionConfig.from_ucl(%(value = "hello";))
         config.value.should eq("hello")
       end
     end
 
     describe "serialization" do
       it "serializes to UCL object" do
-        config = ServerConfig.from_ucl(%{
+        config = ServerConfig.from_ucl(<<-UCL)
           host = "localhost";
           port = 8080;
           tls = true;
-        })
+          UCL
         obj = config.to_ucl
         obj["host"].to_s.should eq("localhost")
         obj["port"].to_i.should eq(8080)
@@ -697,10 +695,10 @@ describe Ucl do
       end
 
       it "serializes to UCL string" do
-        config = ServerConfig.from_ucl(%{
+        config = ServerConfig.from_ucl(<<-UCL)
           host = "localhost";
           port = 8080;
-        })
+          UCL
         output = config.to_ucl_string
         output.should contain("host")
         output.should contain("localhost")
@@ -709,7 +707,7 @@ describe Ucl do
       end
 
       it "serializes nested objects" do
-        config = AppConfig.from_ucl(%{
+        config = AppConfig.from_ucl(<<-UCL)
           name = "myapp";
           server {
             host = "localhost";
@@ -719,7 +717,7 @@ describe Ucl do
             connection_string = "sqlite://test.db";
           }
           tags = ["a", "b"];
-        })
+          UCL
         obj = config.to_ucl
         obj["name"].to_s.should eq("myapp")
         obj["server"]["host"].to_s.should eq("localhost")
@@ -730,22 +728,22 @@ describe Ucl do
       end
 
       it "serializes with custom keys" do
-        config = DatabaseConfig.from_ucl(%{
+        config = DatabaseConfig.from_ucl(<<-UCL)
           connection_string = "postgres://localhost/db";
-        })
+          UCL
         obj = config.to_ucl
         obj["connection_string"].to_s.should eq("postgres://localhost/db")
       end
 
       it "skips nil values by default" do
-        config = OptionalConfig.from_ucl(%{required_field = "yes";})
+        config = OptionalConfig.from_ucl(%(required_field = "yes";))
         obj = config.to_ucl
         obj["required_field"].to_s.should eq("yes")
         obj["optional_string"]?.should be_nil
       end
 
       it "roundtrips through serialization" do
-        original = AppConfig.from_ucl(%{
+        original = AppConfig.from_ucl(<<-UCL)
           name = "roundtrip";
           server {
             host = "10.0.0.1";
@@ -757,7 +755,7 @@ describe Ucl do
             pool_size = 20;
           }
           tags = ["prod", "us-east"];
-        })
+          UCL
         ucl_string = original.to_ucl_string
         restored = AppConfig.from_ucl(ucl_string)
         restored.name.should eq("roundtrip")
@@ -773,10 +771,10 @@ describe Ucl do
     describe "from_ucl_file" do
       it "loads config from file" do
         path = File.tempname("ucl_serializable_test", ".conf")
-        File.write(path, %{
+        File.write(path, <<-UCL)
           host = "filehost";
           port = 3000;
-        })
+          UCL
         begin
           config = ServerConfig.from_ucl_file(path)
           config.host.should eq("filehost")

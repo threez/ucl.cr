@@ -111,7 +111,7 @@ module Ucl
               %key = %child.key.not_nil!
               case %key
               {% for name, value in properties %}
-                when {{value[:key]}}
+                when {{ value[:key] }}
                   begin
                     {% if value[:nilable] %}
                       if %child.null?
@@ -123,13 +123,13 @@ module Ucl
 
                     %var{name} =
                       {% if value[:converter] %}
-                        {{value[:converter]}}.from_ucl(%child)
+                        {{ value[:converter] }}.from_ucl(%child)
                       {% else %}
                         ::Union(typeof(@{{ name }})).new(%child)
                       {% end %}
                     %found{name} = true
                   rescue exc : ::Ucl::Error
-                    raise ::Ucl::Error.new("Error deserializing #{self.class}#" + {{value[:key]}} + ": #{exc.message}")
+                    raise ::Ucl::Error.new("Error deserializing #{self.class}#" + {{ value[:key] }} + ": #{exc.message}")
                   end
               {% end %}
               else
@@ -139,15 +139,15 @@ module Ucl
 
             {% for name, value in properties %}
               if %found{name}
-                @{{name}} = %var{name}
+                @{{ name }} = %var{name}
               else
                 {% unless value[:has_default] || value[:nilable] %}
-                  raise ::Ucl::Error.new("Missing UCL attribute: {{value[:key].id}} for #{self.class}")
+                  raise ::Ucl::Error.new("Missing UCL attribute: {{ value[:key].id }} for #{self.class}")
                 {% end %}
               end
 
               {% if value[:presence] %}
-                @{{name}}_present = %found{name}.as(Bool)
+                @{{ name }}_present = %found{name}.as(Bool)
               {% end %}
             {% end %}
           {% end %}
@@ -199,7 +199,7 @@ module Ucl
         %obj = ::Ucl::Object.new_object
 
         {% for name, value in properties %}
-          %val = @{{name}}
+          %val = @{{ name }}
 
           {% if value[:ignore_serialize] %}
             unless {{ value[:ignore_serialize] }}
@@ -210,9 +210,9 @@ module Ucl
             {% end %}
 
               {% if value[:converter] %}
-                %obj[{{value[:key]}}] = {{value[:converter]}}.to_ucl(%val)
+                %obj[{{ value[:key] }}] = {{ value[:converter] }}.to_ucl(%val)
               {% else %}
-                %obj[{{value[:key]}}] = %val.to_ucl
+                %obj[{{ value[:key] }}] = %val.to_ucl
               {% end %}
 
             {% unless value[:emit_null] %}
@@ -343,7 +343,7 @@ end
 
 struct Float32
   def to_ucl : Ucl::Object
-    Ucl::Object.from(self.to_f64)
+    Ucl::Object.from(to_f64)
   end
 
   def self.new(ucl_object : Ucl::Object) : self
@@ -401,7 +401,7 @@ class Array
 
   def self.new(ucl_object : Ucl::Object) : self
     raise Ucl::Error.new("Expected UCL array, got #{ucl_object.type_name}") unless ucl_object.array?
-    ary = self.new(ucl_object.size)
+    ary = new(ucl_object.size)
     ucl_object.each do |item|
       ary << T.new(item)
     end
@@ -426,7 +426,7 @@ class Hash
 
   def self.new(ucl_object : Ucl::Object) : self
     raise Ucl::Error.new("Expected UCL object, got #{ucl_object.type_name}") unless ucl_object.object?
-    hash = self.new
+    hash = new
     ucl_object.each do |child|
       key = child.key || next
       {% if K == String %}
@@ -464,14 +464,14 @@ def Union.new(ucl_object : Ucl::Object)
     {% int_type_order = [Int64, UInt64, Int32, UInt32, Int16, UInt16, Int8, UInt8] %}
     {% for type in int_type_order.select { |t| T.includes?(t) } %}
       if ucl_object.int?
-        return {{type}}.new(ucl_object)
+        return {{ type }}.new(ucl_object)
       end
     {% end %}
 
     {% float_type_order = [Float64, Float32] %}
     {% for type in float_type_order.select { |t| T.includes?(t) } %}
       if ucl_object.float? || ucl_object.time?
-        return {{type}}.new(ucl_object)
+        return {{ type }}.new(ucl_object)
       end
     {% end %}
 
@@ -487,15 +487,15 @@ def Union.new(ucl_object : Ucl::Object)
     {% for type in non_primitives %}
       {% if type < Array %}
         if ucl_object.array?
-          return {{type}}.new(ucl_object)
+          return {{ type }}.new(ucl_object)
         end
       {% elsif type < Hash %}
         if ucl_object.object?
-          return {{type}}.new(ucl_object)
+          return {{ type }}.new(ucl_object)
         end
       {% else %}
         if ucl_object.object?
-          return {{type}}.new(ucl_object)
+          return {{ type }}.new(ucl_object)
         end
       {% end %}
     {% end %}
