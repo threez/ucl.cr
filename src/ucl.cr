@@ -36,7 +36,7 @@ require "./ucl/serializable"
 # config.host # => "localhost"
 # ```
 module Ucl
-  VERSION = "0.1.1"
+  VERSION = "0.1.2"
 
   # Recursive type alias for deep conversion of UCL trees to native Crystal types.
   # Returned by `Ucl::Object#to_any`.
