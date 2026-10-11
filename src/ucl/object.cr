@@ -408,7 +408,7 @@ module Ucl
     end
 
     # Sets a key to a primitive Crystal value (converted to UCL automatically).
-    def []=(key : String, value : Int | Float | Bool | String | Nil) : Object
+    def []=(key : String, value : Int | Float | Bool | String?) : Object
       child = Object.from(value)
       self[key] = child
     end
@@ -421,7 +421,7 @@ module Ucl
     end
 
     # Appends a primitive Crystal value to this array (converted to UCL automatically).
-    def <<(value : Int | Float | Bool | String | Nil) : self
+    def <<(value : Int | Float | Bool | String?) : self
       self << Object.from(value)
     end
 
